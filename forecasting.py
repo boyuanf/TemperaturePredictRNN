@@ -1,4 +1,10 @@
 import os
+import numpy as np
+from keras import layers
+from keras.models import Model
+from matplotlib import pyplot as plt
+
+
 data_dir = 'C:\Boyuan\Machine Learning\Datasets\jena_climate_2009_2016'
 fname = os.path.join(data_dir, 'jena_climate_2009_2016.csv')
 
@@ -13,22 +19,17 @@ lines = lines[1:]
 print(header)
 print(len(lines))
 
-
-
-import numpy as np
-
+# Read the data
 float_data = np.zeros((len(lines), len(header) - 1))
 for i, line in enumerate(lines):
     values = [float(x) for x in line.split(',')[1:]]
     float_data[i, :] = values
 
-
-
-from matplotlib import pyplot as plt
-
-temp = float_data[:, 1]
-print(len(temp))
-plt.plot(range(len(temp)), temp)
+# Normalize the dataset
+mean = float_data[:200000].mean(axis=0)
+float_data -= mean
+std = float_data[:200000].std(axis=0)
+float_data /= std
 
 
 def generator(data, lookback, delay, min_index, max_index,
@@ -53,6 +54,8 @@ def generator(data, lookback, delay, min_index, max_index,
             samples[j] = data[indices]
             targets[j] = data[rows[j] + delay][1]
         yield samples, targets
+
+# Create the training, validation, test dataset
 
 lookback = 1440
 step = 6
@@ -83,18 +86,65 @@ test_gen = generator(float_data,
                     shuffle=True,
                     step=step,
                     batch_size=batch_size)
+train_sqn = generator(float_data,
+                      lookback=lookback,
+                      delay=delay,
+                      min_index=0,
+                      max_index=200000,
+                      shuffle=False,
+                      step=step,
+                      batch_size=batch_size)
+val_sqn = generator(float_data,
+                    lookback=lookback,
+                    delay=delay,
+                    min_index=200001,
+                    max_index=300000,
+                    shuffle=False,
+                    step=step,
+                    batch_size=batch_size)
+test_sqn = generator(float_data,
+                    lookback=lookback,
+                    delay=delay,
+                    min_index=300001,
+                    max_index=None,
+                    shuffle=False,
+                    step=step,
+                    batch_size=batch_size)
 
 val_steps = (300000 - 200001 - lookback)
 
 test_steps = (len(float_data) - 300001 - lookback)
 
-def evaluate_naive_method():
-    batch_maes = []
-    for step in range(val_steps):
-        samples, targets = next(val_gen)
-        preds = samples[:, -1, 1]
-        mae = np.mean(np.abs(preds - targets))
-        batch_maes.append(mae)
-    print(np.mean(batch_maes))
+# Train the model
 
-evaluate_naive_method()
+inputs = layers.Input(shape=(None, float_data.shape[-1]))
+gru = layers.GRU(32, dropout=0.5, recurrent_dropout=0.5)(inputs)
+outputs = layers.Dense(1)(gru)
+model = Model(inputs=inputs, outputs=outputs)
+model.compile(optimizer='rmsprop',
+              loss='mae',
+              metrics=['mae'])
+history = model.fit_generator(train_sqn,
+                    steps_per_epoch=500,
+                    epochs=20,
+                    validation_data=val_gen,
+                    validation_steps=val_steps)
+
+
+# Save training and validation result
+
+loss = history.history['loss']
+val_loss = history.history['val_loss']
+
+epochs = range(1, len(loss) + 1)
+
+plt.figure()
+
+plt.plot(epochs, loss, 'bo', label='Training loss')
+plt.plot(epochs, val_loss, 'b', label='Validation loss')
+plt.title('Training and validation loss')
+plt.legend()
+
+plt.savefig('Training and validation loss.png')
+
+
