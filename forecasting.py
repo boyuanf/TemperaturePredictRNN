@@ -5,7 +5,8 @@ from keras.models import Model
 from matplotlib import pyplot as plt
 
 
-data_dir = 'C:\Boyuan\Machine Learning\Datasets\jena_climate_2009_2016'
+data_dir = '/home/ubuntu/Boyuan/jena_climate_2009_2016'
+# data_dir = 'C:\Boyuan\Machine Learning\Datasets\jena_climate_2009_2016'
 fname = os.path.join(data_dir, 'jena_climate_2009_2016.csv')
 
 f = open(fname)
@@ -111,7 +112,8 @@ test_sqn = generator(float_data,
                     step=step,
                     batch_size=batch_size)
 
-val_steps = (300000 - 200001 - lookback)
+#val_steps = (300000 - 200001 - lookback)
+val_steps = 500
 
 test_steps = (len(float_data) - 300001 - lookback)
 
@@ -126,8 +128,8 @@ model.compile(optimizer='rmsprop',
               metrics=['mae'])
 history = model.fit_generator(train_sqn,
                     steps_per_epoch=500,
-                    epochs=20,
-                    validation_data=val_gen,
+                    epochs=40,
+                    validation_data=val_sqn,
                     validation_steps=val_steps)
 
 
@@ -140,11 +142,46 @@ epochs = range(1, len(loss) + 1)
 
 plt.figure()
 
-plt.plot(epochs, loss, 'bo', label='Training loss')
+plt.plot(epochs, loss, 'r', label='Training loss')
 plt.plot(epochs, val_loss, 'b', label='Validation loss')
 plt.title('Training and validation loss')
 plt.legend()
 
 plt.savefig('Training and validation loss.png')
+
+# Compare predicts and targets
+
+predicts = model.predict_generator(test_sqn, steps=100, workers=4)
+
+test_sqn = generator(float_data,
+                    lookback=lookback,
+                    delay=delay,
+                    min_index=300001,
+                    max_index=None,
+                    shuffle=False,
+                    step=step,
+                    batch_size=batch_size)
+
+targets = []
+for step in range(100):
+    sample_batch, target_batch = next(test_sqn)
+    targets.append(target_batch)
+
+targets = np.hstack(targets)
+
+import matplotlib.pyplot as plt
+
+epochs = range(0, 1200)
+
+plt.figure()
+plt.plot(epochs, predicts[:1200], 'r', label='predicts')
+plt.plot(epochs, targets[:1200], 'b', label='targets')
+plt.title('Predicts and targets compare')
+plt.legend()
+
+plt.savefig('Predicts and targets compare.png')
+
+
+
 
 
