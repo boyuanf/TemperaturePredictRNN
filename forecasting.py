@@ -98,7 +98,7 @@ test_steps = (len(float_data) - 300001 - lookback)
 # Train the model
 
 inputs = layers.Input(shape=(None, float_data.shape[-1]))
-gru = layers.GRU(32, dropout=0.5, recurrent_dropout=0.5)(inputs)
+gru = layers.GRU(32, dropout=0.2, recurrent_dropout=0.5)(inputs)
 outputs = layers.Dense(1)(gru)
 model = Model(inputs=inputs, outputs=outputs)
 model.compile(optimizer='rmsprop',
@@ -106,7 +106,8 @@ model.compile(optimizer='rmsprop',
               metrics=['mae'])
 history = model.fit_generator(train_sqn,
                     steps_per_epoch=500,
-                    epochs=40,)
+                    epochs=20,
+                    workers=4, max_queue_size=10)
                     #validation_data=val_sqn,
                     #validation_steps=val_steps)
 
