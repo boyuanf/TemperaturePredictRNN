@@ -1,12 +1,14 @@
 import os
+import sys
 import numpy as np
 from keras import layers
 from keras.models import Model
 from matplotlib import pyplot as plt
 
-
-data_dir = '/home/ubuntu/Boyuan/jena_climate_2009_2016'
-# data_dir = 'C:\Boyuan\Machine Learning\Datasets\jena_climate_2009_2016'
+if sys.platform == 'win32':
+    data_dir = 'C:\Boyuan\Machine Learning\Datasets\jena_climate_2009_2016'
+else:
+    data_dir = '/home/ubuntu/Boyuan/jena_climate_2009_2016'
 fname = os.path.join(data_dir, 'jena_climate_2009_2016.csv')
 
 f = open(fname)
