@@ -63,30 +63,6 @@ step = 6
 delay = 144
 batch_size = 128
 
-train_gen = generator(float_data,
-                      lookback=lookback,
-                      delay=delay,
-                      min_index=0,
-                      max_index=200000,
-                      shuffle=True,
-                      step=step,
-                      batch_size=batch_size)
-val_gen = generator(float_data,
-                    lookback=lookback,
-                    delay=delay,
-                    min_index=200001,
-                    max_index=300000,
-                    shuffle=True,
-                    step=step,
-                    batch_size=batch_size)
-test_gen = generator(float_data,
-                    lookback=lookback,
-                    delay=delay,
-                    min_index=300001,
-                    max_index=None,
-                    shuffle=True,
-                    step=step,
-                    batch_size=batch_size)
 train_sqn = generator(float_data,
                       lookback=lookback,
                       delay=delay,
@@ -128,28 +104,41 @@ model.compile(optimizer='rmsprop',
               metrics=['mae'])
 history = model.fit_generator(train_sqn,
                     steps_per_epoch=500,
-                    epochs=40,
-                    validation_data=val_sqn,
-                    validation_steps=val_steps)
+                    epochs=40,)
+                    #validation_data=val_sqn,
+                    #validation_steps=val_steps)
 
 
 # Save training and validation result
 
 loss = history.history['loss']
-val_loss = history.history['val_loss']
+#val_loss = history.history['val_loss']
 
 epochs = range(1, len(loss) + 1)
 
 plt.figure()
 
 plt.plot(epochs, loss, 'r', label='Training loss')
-plt.plot(epochs, val_loss, 'b', label='Validation loss')
+#plt.plot(epochs, val_loss, 'b', label='Validation loss')
 plt.title('Training and validation loss')
 plt.legend()
 
 plt.savefig('Training and validation loss.png')
 
+
+# Evaluate the training model
+scoreSeg = model.evaluate_generator(test_sqn, steps=1000, workers=4)
+print("mean_absolute_error = ", scoreSeg)
+
 # Compare predicts and targets
+test_sqn = generator(float_data,
+                    lookback=lookback,
+                    delay=delay,
+                    min_index=300001,
+                    max_index=None,
+                    shuffle=False,
+                    step=step,
+                    batch_size=batch_size)
 
 predicts = model.predict_generator(test_sqn, steps=100, workers=4)
 
@@ -168,8 +157,6 @@ for step in range(100):
     targets.append(target_batch)
 
 targets = np.hstack(targets)
-
-import matplotlib.pyplot as plt
 
 epochs = range(0, 1200)
 
