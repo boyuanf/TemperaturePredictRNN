@@ -69,10 +69,11 @@ train_sqn = generator(float_data,
                       lookback=lookback,
                       delay=delay,
                       min_index=0,
-                      max_index=200000,
+                      max_index=300000,
                       shuffle=False,
                       step=step,
                       batch_size=batch_size)
+'''
 val_sqn = generator(float_data,
                     lookback=lookback,
                     delay=delay,
@@ -81,6 +82,7 @@ val_sqn = generator(float_data,
                     shuffle=False,
                     step=step,
                     batch_size=batch_size)
+'''
 test_sqn = generator(float_data,
                     lookback=lookback,
                     delay=delay,
@@ -98,8 +100,18 @@ test_steps = (len(float_data) - 300001 - lookback)
 # Train the model
 
 inputs = layers.Input(shape=(None, float_data.shape[-1]))
-gru = layers.GRU(32, dropout=0.2, recurrent_dropout=0.5)(inputs)
-outputs = layers.Dense(1)(gru)
+
+'''
+# one layer LSTM
+#gru = layers.GRU(32, dropout=0.2, recurrent_dropout=0.5)(inputs)
+rnn = layers.LSTM(32)(inputs)
+outputs = layers.Dense(1)(rnn)
+'''
+# stacked LSTM
+lstm_layer1 = layers.GRU(32, return_sequences=True)(inputs)
+lstm_layer2 = layers.GRU(64, activation='relu')(lstm_layer1)
+outputs = layers.Dense(1)(lstm_layer2)
+
 model = Model(inputs=inputs, outputs=outputs)
 model.compile(optimizer='rmsprop',
               loss='mae',
@@ -130,7 +142,7 @@ plt.savefig('Training and validation loss.png')
 
 
 # Evaluate the training model
-scoreSeg = model.evaluate_generator(test_sqn, steps=1000, workers=4)
+scoreSeg = model.evaluate_generator(test_sqn, steps=2000, workers=4)
 print("mean_absolute_error = ", scoreSeg)
 
 # Compare predicts and targets
