@@ -4,6 +4,7 @@ import numpy as np
 from keras import layers
 from keras.models import Model
 from matplotlib import pyplot as plt
+from keras import optimizers
 
 if sys.platform == 'win32':
     data_dir = 'C:\Boyuan\Machine Learning\Datasets\jena_climate_2009_2016'
@@ -69,20 +70,20 @@ train_sqn = generator(float_data,
                       lookback=lookback,
                       delay=delay,
                       min_index=0,
-                      max_index=300000,
+                      max_index=250000,
                       shuffle=False,
                       step=step,
                       batch_size=batch_size)
-'''
+
 val_sqn = generator(float_data,
                     lookback=lookback,
                     delay=delay,
-                    min_index=200001,
+                    min_index=250001,
                     max_index=300000,
                     shuffle=False,
                     step=step,
                     batch_size=batch_size)
-'''
+
 test_sqn = generator(float_data,
                     lookback=lookback,
                     delay=delay,
@@ -92,7 +93,7 @@ test_sqn = generator(float_data,
                     step=step,
                     batch_size=batch_size)
 
-#val_steps = (300000 - 200001 - lookback)
+#val_steps = (300000 - 250001 - lookback)
 val_steps = 500
 
 test_steps = (len(float_data) - 300001 - lookback)
@@ -101,40 +102,43 @@ test_steps = (len(float_data) - 300001 - lookback)
 
 inputs = layers.Input(shape=(None, float_data.shape[-1]))
 
-'''
+
 # one layer LSTM
 #gru = layers.GRU(32, dropout=0.2, recurrent_dropout=0.5)(inputs)
 rnn = layers.LSTM(32)(inputs)
 outputs = layers.Dense(1)(rnn)
+
 '''
 # stacked LSTM
-lstm_layer1 = layers.GRU(32, return_sequences=True)(inputs)
-lstm_layer2 = layers.GRU(64, activation='relu')(lstm_layer1)
+lstm_layer1 = layers.GRU(32, return_sequences=True, dropout=0.2, recurrent_dropout=0.5,)(inputs)
+lstm_layer2 = layers.GRU(32, activation='relu', dropout=0.2, recurrent_dropout=0.5)(lstm_layer1)
 outputs = layers.Dense(1)(lstm_layer2)
+'''
 
 model = Model(inputs=inputs, outputs=outputs)
-model.compile(optimizer='rmsprop',
+RMSprop = optimizers.RMSprop(lr=0.00001, decay=0.001)
+model.compile(optimizer=RMSprop,
               loss='mae',
               metrics=['mae'])
 history = model.fit_generator(train_sqn,
                     steps_per_epoch=500,
-                    epochs=20,
-                    workers=4, max_queue_size=10)
-                    #validation_data=val_sqn,
-                    #validation_steps=val_steps)
+                    epochs=80,
+                    workers=4, max_queue_size=10,
+                    validation_data=val_sqn,
+                    validation_steps=val_steps)
 
 
 # Save training and validation result
 
 loss = history.history['loss']
-#val_loss = history.history['val_loss']
+val_loss = history.history['val_loss']
 
 epochs = range(1, len(loss) + 1)
 
 plt.figure()
 
 plt.plot(epochs, loss, 'r', label='Training loss')
-#plt.plot(epochs, val_loss, 'b', label='Validation loss')
+plt.plot(epochs, val_loss, 'b', label='Validation loss')
 plt.title('Training and validation loss')
 plt.legend()
 
@@ -142,7 +146,7 @@ plt.savefig('Training and validation loss.png')
 
 
 # Evaluate the training model
-scoreSeg = model.evaluate_generator(test_sqn, steps=2000, workers=4)
+scoreSeg = model.evaluate_generator(test_sqn, steps=1000, workers=4)
 print("mean_absolute_error = ", scoreSeg)
 
 # Compare predicts and targets
@@ -155,7 +159,7 @@ test_sqn = generator(float_data,
                     step=step,
                     batch_size=batch_size)
 
-predicts = model.predict_generator(test_sqn, steps=100, workers=4)
+predicts = model.predict_generator(test_sqn, steps=200, workers=4)
 
 test_sqn = generator(float_data,
                     lookback=lookback,
@@ -167,17 +171,17 @@ test_sqn = generator(float_data,
                     batch_size=batch_size)
 
 targets = []
-for step in range(100):
+for step in range(200):
     sample_batch, target_batch = next(test_sqn)
     targets.append(target_batch)
 
 targets = np.hstack(targets)
 
-epochs = range(0, 1200)
+epochs = range(0, 2400)
 
 plt.figure()
-plt.plot(epochs, predicts[:1200], 'r', label='predicts')
-plt.plot(epochs, targets[:1200], 'b', label='targets')
+plt.plot(epochs, predicts[:2400], 'r', label='predicts')
+plt.plot(epochs, targets[:2400], 'b', label='targets')
 plt.title('Predicts and targets compare')
 plt.legend()
 
