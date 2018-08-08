@@ -5,6 +5,8 @@ from keras import layers
 from keras.models import Model
 from matplotlib import pyplot as plt
 from keras import optimizers
+import keras.backend as K
+from keras.callbacks import Callback
 
 if sys.platform == 'win32':
     data_dir = 'C:\Boyuan\Machine Learning\Datasets\jena_climate_2009_2016'
@@ -115,18 +117,35 @@ lstm_layer2 = layers.GRU(32, activation='relu', dropout=0.2, recurrent_dropout=0
 outputs = layers.Dense(1)(lstm_layer2)
 '''
 
+
+class LearningRateTracker(Callback):
+    def on_epoch_end(self, epoch, logs={}):
+        optimizer = self.model.optimizer
+        lr = K.eval(optimizer.lr * (1. / (1. + optimizer.decay * K.cast(optimizer.iterations,
+                                                  K.dtype(optimizer.decay)))))
+        itr = K.eval(optimizer.iterations)
+        print('\nIterations: {0},  LR: {1:.10f}\n'.format(itr, lr))
+
+
 model = Model(inputs=inputs, outputs=outputs)
-RMSprop = optimizers.RMSprop(lr=0.00001, decay=0.001)
+RMSprop = optimizers.RMSprop(lr=0.0001, decay=0.01)
 model.compile(optimizer=RMSprop,
               loss='mae',
               metrics=['mae'])
+history = model.fit_generator(train_sqn,
+                    steps_per_epoch=5,
+                    epochs=80,
+                    workers=4, max_queue_size=10,
+                    callbacks = [LearningRateTracker()])
+'''
 history = model.fit_generator(train_sqn,
                     steps_per_epoch=500,
                     epochs=80,
                     workers=4, max_queue_size=10,
                     validation_data=val_sqn,
-                    validation_steps=val_steps)
-
+                    validation_steps=val_steps,
+                    callbacks = [LearningRateTracker()])
+'''
 
 # Save training and validation result
 
