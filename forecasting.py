@@ -128,16 +128,19 @@ class LearningRateTracker(Callback):
 
 
 model = Model(inputs=inputs, outputs=outputs)
-RMSprop = optimizers.RMSprop(lr=0.0001, decay=0.01)
+RMSprop = optimizers.RMSprop(lr=0.0001, decay=0.00005)
 model.compile(optimizer=RMSprop,
               loss='mae',
               metrics=['mae'])
+
+'''
 history = model.fit_generator(train_sqn,
                     steps_per_epoch=5,
                     epochs=80,
                     workers=4, max_queue_size=10,
                     callbacks = [LearningRateTracker()])
 '''
+
 history = model.fit_generator(train_sqn,
                     steps_per_epoch=500,
                     epochs=80,
@@ -145,7 +148,7 @@ history = model.fit_generator(train_sqn,
                     validation_data=val_sqn,
                     validation_steps=val_steps,
                     callbacks = [LearningRateTracker()])
-'''
+
 
 # Save training and validation result
 
