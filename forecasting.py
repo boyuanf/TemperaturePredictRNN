@@ -148,7 +148,7 @@ model.compile(optimizer=RMSprop,
 '''
 history = model.fit_generator(train_sqn,
                     steps_per_epoch=5,
-                    epochs=80,
+                    epochs=5,
                     workers=4, max_queue_size=10,
                     validation_data=val_sqn,
                     validation_steps=10,
@@ -163,8 +163,8 @@ history = model.fit_generator(train_sqn,
                     validation_steps=val_steps,
                     callbacks = callbacks_list)
 
-# Save training and validation result
 
+# Save training and validation result
 loss = history.history['loss']
 val_loss = history.history['val_loss']
 
@@ -194,6 +194,11 @@ test_sqn = generator(float_data,
                     step=step,
                     batch_size=batch_size)
 
+# using the best model to test
+model.load_weights("weights.best.hdf5")
+model.compile(optimizer=RMSprop,
+              loss='mae',
+              metrics=['mae'])
 predicts = model.predict_generator(test_sqn, steps=200, workers=4)
 
 test_sqn = generator(float_data,
