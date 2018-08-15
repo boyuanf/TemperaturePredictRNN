@@ -79,7 +79,7 @@ learningratetracker = LearningRateTracker()
 
 # Checkpoint to save the best model based on val_loss
 filepath="weights.best.hdf5"
-checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='max')
+checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
 
 # Callback that streams epoch results to a csv file
 csv_logger = CSVLogger('training.log')
