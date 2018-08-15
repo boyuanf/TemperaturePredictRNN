@@ -76,7 +76,7 @@ class LearningRateTracker(Callback):
 
 learningratetracker = LearningRateTracker()
 
-# Checkpoint
+# Checkpoint to save the best model based on val_loss
 filepath="weights.best.hdf5"
 checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='max')
 
@@ -125,21 +125,22 @@ test_steps = (len(float_data) - 300001 - lookback)
 
 inputs = layers.Input(shape=(None, float_data.shape[-1]))
 
-
+'''
 # one layer LSTM
 #gru = layers.GRU(32, dropout=0.2, recurrent_dropout=0.5)(inputs)
 rnn = layers.LSTM(32)(inputs)
 outputs = layers.Dense(1)(rnn)
+'''
 
-'''
+''''''
 # stacked LSTM
-lstm_layer1 = layers.GRU(32, return_sequences=True, dropout=0.2, recurrent_dropout=0.5,)(inputs)
-lstm_layer2 = layers.GRU(32, activation='relu', dropout=0.2, recurrent_dropout=0.5)(lstm_layer1)
+lstm_layer1 = layers.GRU(32, return_sequences=True, dropout=0.0, recurrent_dropout=0.0,)(inputs)
+lstm_layer2 = layers.GRU(32, activation='relu', dropout=0.0, recurrent_dropout=0.0)(lstm_layer1)
 outputs = layers.Dense(1)(lstm_layer2)
-'''
+
 
 model = Model(inputs=inputs, outputs=outputs)
-RMSprop = optimizers.RMSprop(lr=0.0001, decay=0.00005)
+RMSprop = optimizers.RMSprop(lr=0.0001, decay=0.0001)
 if resume:
     model.load_weights("weights.best.hdf5")
 model.compile(optimizer=RMSprop,
