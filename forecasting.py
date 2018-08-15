@@ -8,6 +8,7 @@ from keras import optimizers
 import keras.backend as K
 from keras.callbacks import Callback
 from keras.callbacks import ModelCheckpoint
+from keras.callbacks import CSVLogger
 
 
 resume = False  # resume from previous checkpoint?
@@ -80,7 +81,10 @@ learningratetracker = LearningRateTracker()
 filepath="weights.best.hdf5"
 checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='max')
 
-callbacks_list = [learningratetracker, checkpoint]
+# Callback that streams epoch results to a csv file
+csv_logger = CSVLogger('training.log')
+
+callbacks_list = [learningratetracker, checkpoint, csv_logger]
 
 # Create the training, validation, test dataset
 
